@@ -4,8 +4,12 @@ library(gdata)
 
 train = read.csv("cleaned_train.csv",sep = ",",header = T)
 test = read.csv("cleaned_test.csv",sep = ",",header = T)
+predict = read.csv("baseline2.txt",sep = ",",header = T)
+
+# Make confirmed a Datetime object
 train$confirmed <- as.Date(train$confirmed, format = "%d.%m.%y")
 test$confirmed <- as.Date(test$confirmed, format = "%d.%m.%y")
+
 
 # code taken from:https://www.kaggle.com/c/bluebook-for-bulldozers/discussion/4066deal with new levels in test data
 uLevels <- function(names){
@@ -18,15 +22,13 @@ uLevels <- function(names){
     mapLevels(test[,c]) <<- map
   }
 }
-
 train$country = uLevels('country')
 train$V1 = uLevels('V1')
 
-# levels(train$country) <- c(levels(test$country),levels(train$country))
-# levels(train$V1) <- c(levels(test$V1),levels(train$V1))
-
-train
+# Fit model
 fit = lm(duration ~ .,data = train)
-predicted = predict(fit,newdata = test)
+predict$duration = predict(fit,newdata = test)
 
-write.csv(predicted,"predicted.csv")
+
+write.csv(predict,"predicted.csv",row.names=FALSE)
+colnames(predict)
