@@ -12,10 +12,10 @@ test = read.csv("cleaned_test.csv",sep = ",",header = T)
 predict = read.csv("baseline2.txt",sep = ",",header = T)
 
 # train$is_cough = NULL
-# train$is_fever = NULL
+train$is_fever = NULL
 
 # test$is_cough = NULL
-# test$is_fever = NULL
+test$is_fever = NULL
 
 # Make confirmed a Datetime object
 train$confirmed <- as.Date(train$confirmed, format = "%Y-%m-%d")
@@ -77,33 +77,33 @@ write.csv(predict,"predicted.csv",row.names=FALSE)
 
 
 ###########################knn approach, need to convert factors to numeric#######################
-knn(train = train_data,test = valid_data,cl = train_data[,'duration',drop=TRUE],k=10)
+# knn(train = train_data,test = valid_data,cl = train_data[,'duration',drop=TRUE],k=10)
 
 
 
 
 ###########################LASSO approach#######################
-train$V1 = NULL
-test$V1 = NULL
-
-lambda_seq <- 10^seq(2, -2, by = -.1)
-set.seed(86)
-x_vars <- model.matrix(duration~. , train)[,-1]
-y_var <- train$duration
-x_vars_test <- model.matrix(~.,select(test,-"Id"))[,-1]
-
-lambda_seq <- 10^seq(2, -2, by = -.1)
-cv_output <- cv.glmnet(x_vars, y_var,
-                       alpha = 1, lambda = lambda_seq, 
-                       nfolds = 5)
-
-
-# identifying best lamda
-best_lam <- cv_output$lambda.min
-best_lam
-lasso_best <- glmnet(x_vars, y_var, alpha = 1, lambda = best_lam)
-pred <- predict(lasso_best, s = best_lam, newx = x_vars_test)
-predict$duration = predict(lasso_best, s = best_lam, newx = x_vars_test)
-write.csv(predict,"predicted.csv",row.names=FALSE)
-lasso_best$beta
+# train$V1 = NULL
+# test$V1 = NULL
+# 
+# lambda_seq <- 10^seq(2, -2, by = -.1)
+# set.seed(86)
+# x_vars <- model.matrix(duration~. , train)[,-1]
+# y_var <- train$duration
+# x_vars_test <- model.matrix(~.,select(test,-"Id"))[,-1]
+# 
+# lambda_seq <- 10^seq(2, -2, by = -.1)
+# cv_output <- cv.glmnet(x_vars, y_var,
+#                        alpha = 1, lambda = lambda_seq, 
+#                        nfolds = 5)
+# 
+# 
+# # identifying best lamda
+# best_lam <- cv_output$lambda.min
+# best_lam
+# lasso_best <- glmnet(x_vars, y_var, alpha = 1, lambda = best_lam)
+# pred <- predict(lasso_best, s = best_lam, newx = x_vars_test)
+# predict$duration = predict(lasso_best, s = best_lam, newx = x_vars_test)
+# write.csv(predict,"predicted.csv",row.names=FALSE)
+# lasso_best$beta
 
