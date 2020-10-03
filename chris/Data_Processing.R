@@ -37,8 +37,6 @@ clean_data = function(df){
   df$age = as.numeric(df$age)
   
   df$symptoms_number = NULL
-  df$is_fever = NULL
-  df$is_cough = NULL
   trim <- function (x) gsub("^\\s+|\\s+$", "", x)
   df$symptoms = trim(df$symptoms)
   for (i in 1:dim(df)[1]) {
@@ -48,22 +46,6 @@ clean_data = function(df){
     }else {
       df$symptoms_number[i] = lengths(regmatches(x, gregexpr(";", x))) + 1
     }
-    if(grepl("fever",x)){
-      df$is_fever[i] = TRUE
-    }else {
-      df$is_fever[i] = FALSE
-    }
-    if(grepl("cough",x)){
-      df$is_cough[i] = TRUE
-    }else {
-      df$is_cough[i] = FALSE
-    }
-    if((df$is_cough[i] == TRUE) & (df$is_fever[i] == FALSE)){
-      df$is_cough_and_fever[i] = TRUE
-    }else{
-      df$is_cough_and_fever[i] = FALSE
-    }
-      
   }
   df$symptoms = NULL
 
@@ -72,30 +54,16 @@ clean_data = function(df){
   return(df)
 }
 
-# train$symptoms_number = NULL
-# train$is_fever = NULL
-# trim <- function (x) gsub("^\\s+|\\s+$", "", x)
-# train$symptoms = trim(train$symptoms)
-# for (i in 1:dim(train)[1]) {
-#   x = train$symptoms[i]
-#   if(x == ''){
-#     train$symptoms_number[i] = 0
-#   }else {
-#     train$symptoms_number[i] = 1
-#   }
-#   if(grepl("fever",x)){
-#     print(x)
-#     train$is_fever[i] = TRUE
-#   }else {
-#     train$is_fever[i] = FALSE
-#   }
-# }
-# 
-# train$symptoms_number = as.factor(train$symptoms_number)
-
 
 cleaned_train = clean_data(train)
 cleaned_test = clean_data(test)
 
 write.csv(cleaned_train,"cleaned_train.csv",row.names=FALSE)
 write.csv(cleaned_test,"cleaned_test.csv",row.names=FALSE)
+
+
+initial.1 <- lm(data=cleaned_train, formula = duration~ 1)
+final.1 <- lm(data=cleaned_train, formula=duration~.)
+
+step1 <- step(object=initial.1, scope=list(upper=final.1), 
+              k = log(nrow(cleaned_train)))

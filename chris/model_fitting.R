@@ -45,41 +45,47 @@ uLevels <- function(names){
 # uLevels('country')
 uLevels(c('country','V1','sex'))
 
-MSE.matrix = matrix(NA,nrow = 500,ncol = 4)
+MSE.matrix = matrix(NA,nrow = 200,ncol = 4)
 colnames(MSE.matrix) = c("MSE.tree","MSPE.tree","MSE.forest","MSPE.forest")
 # Train-valid split
-for (r in 1:500) {
+for (r in 1:200) {
+  print(paste0(r," in ",200))
   train_index = sample(1:nrow(train),0.8*nrow(train))
   train_data = train[train_index,]
   valid_data = train[-train_index,]
   # Fit model
-  # model.linear = lm(duration ~ .,data = train_data)
+  model.linear = lm(duration~confirmed + symptoms_number,data = train_data)
   # MSE of the train data
-  # mean((predict(model.linear,data = train_data) - train_data$duration)^2)
+  MSE.matrix[r,1] = mean((predict(model.linear,data = train_data) - train_data$duration)^2)
   # MSE of the valid data
-  # mean((predict(model.linear,newdata = valid_data) - valid_data$duration)^2)
+  MSE.matrix[r,2] = mean((predict(model.linear,newdata = valid_data) - valid_data$duration)^2)
   # predict$duration = predict(model.linear,newdata = test)
   # write.csv(predict,"predicted.csv",row.names=FALSE)
   
-  # Regression Tree model
-  model.tree <- rpart(duration ~ age + confirmed + country + is_cough + symptoms_number, data = train_data)
-  # MSE of the train data
-  MSE.matrix[r,1] = mean((predict(model.tree,data = train_data) - train_data$duration)^2)
-  # MSE of the valid data
-  MSE.matrix[r,2] = mean((predict(model.tree,newdata = valid_data) - valid_data$duration)^2)
+  # # Regression Tree model
+  # model.tree <- rpart(duration ~ age + confirmed + country + is_cough + symptoms_number, data = train_data)
+  # # MSE of the train data
+  # MSE.matrix[r,1] = mean((predict(model.tree,data = train_data) - train_data$duration)^2)
+  # # MSE of the valid data
+  # MSE.matrix[r,2] = mean((predict(model.tree,newdata = valid_data) - valid_data$duration)^2)
 
   # Random Forest Regression
-  model.forest = randomForest(duration ~ age + confirmed + country + is_cough + symptoms_number, data = train_data)
+  model.forest = randomForest(duration ~ ., data = train_data)
   # MSE of the train data
   MSE.matrix[r,3] = mean((predict(model.forest,data = train_data) - train_data$duration)^2)
   # MSE of the valid data
   MSE.matrix[r,4] = mean((predict(model.forest,newdata = valid_data) - valid_data$duration)^2)
+  print(MSE.matrix[r,])
 }
 print(apply(MSE.matrix,2,mean))
 print(model.forest$importance)
 
-model.forest = randomForest(duration ~ ., data = train)
-predict$duration = predict(model.forest, newdata = test)
+
+
+
+model.linear = lm(duration~confirmed + symptoms_number,data = train)
+model.forest = model.forest = randomForest(duration ~ confirmed + symptoms_number, data = train)
+predict$duration = predict(model.linear, newdata = test)/2 + predict(model.forest, newdata = test)/2
 write.csv(predict,"predicted.csv",row.names=FALSE)
 
 
