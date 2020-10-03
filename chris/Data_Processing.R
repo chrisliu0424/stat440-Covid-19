@@ -1,5 +1,6 @@
 rm(list = ls())
 setwd("~/Documents/GitHub/stat440-Covid-19/chris")
+library(lubridate)
 
 train = read.csv("train2.txt",sep = ",",header = T)
 test = read.csv("test2.txt",sep = ",",header = T)
@@ -57,8 +58,17 @@ clean_data = function(df){
     }else {
       df$is_cough[i] = FALSE
     }
+    if((df$is_cough[i] == TRUE) & (df$is_fever[i] == FALSE)){
+      df$is_cough_and_fever[i] = TRUE
+    }else{
+      df$is_cough_and_fever[i] = FALSE
+    }
+      
   }
   df$symptoms = NULL
+
+  # Create a month column
+  df$month = month(as.POSIXct(df$confirmed))
   return(df)
 }
 
