@@ -31,7 +31,7 @@ for (i in seq(from = 0, to = 1, by = 0.1)){
       MSE.matrix[r,2] = mean((predict(model.Regression,newdata = valid_data) - valid_data$duration)^2)
       
       # Random Forest Regression
-      model.forest = randomForest(duration ~ ., data = train_data)
+      model.forest = randomForest(duration ~ ., data = train_data[,c(1,25,26,27,2:5)])
       # MSE of the train data
       MSE.matrix[r,3] = mean((predict(model.forest,data = train_data) - train_data$duration)^2)
       # MSE of the valid data
@@ -39,7 +39,7 @@ for (i in seq(from = 0, to = 1, by = 0.1)){
       
       
       # Knn
-      predict.knn = knn(train = train_data, test = valid_data,cl = train_data[,'duration',drop=TRUE], k=10)
+      predict.knn = knn(train = train_data[,c(1,25,26,17:24)], test = valid_data[,c(1,25,26,17:24)],cl = train_data[,'duration',drop=TRUE], k=23)
       # MSE of the valid data
       MSE.matrix[r,5] = mean((as.numeric(predict.knn) - valid_data$duration)^2)
       
@@ -70,7 +70,13 @@ for (i in 1:100) {
 }
 Knn_matrix
 
-model.Regression <- lm(duration ~ symptoms_number + confirmed, data = train)
+model.Regression <- lm(duration ~ age + confirmed, data = train)
 model.forest = randomForest(duration ~ ., data = train)
-predict$duration = predict(model.Regression, newdata = test)*0.3 + predict(model.forest, newdata = test)*0.4 + as.numeric(knn(train = select(train,-c('duration')), test = test,cl = train[,'duration',drop=TRUE], k=10))*0.3
+predict$duration = predict(model.Regression, newdata = test)*0.5 + predict(model.forest, newdata = test)*0.5 #+ as.numeric(knn(train = select(train,-c('duration')), test = test,cl = train[,'duration',drop=TRUE], k=10))*0.3
 write.csv(predict,"predicted.csv",row.names=FALSE)
+
+
+
+
+
+

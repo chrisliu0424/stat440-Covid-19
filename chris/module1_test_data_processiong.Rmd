@@ -63,10 +63,10 @@ for (i in 1:length(age)) {
   else if (90<=as.numeric(age[i]) && as.numeric(age[i])<100) {age.90to99[i] = 1}
 }
 
-all.age <- as.data.frame(cbind(age, age.missing, age.0to9, age.10to19, 
-                                 age.20to29, age.30to39, age.40to49, age.50to59, age.60to69,
-                                 age.70to79, age.80to89, age.90to99))
-
+# all.age <- as.data.frame(cbind(age, age.missing, age.0to9, age.10to19, 
+                                 # age.20to29, age.30to39, age.40to49, age.50to59, age.60to69,
+                                 # age.70to79, age.80to89, age.90to99))
+all.age <- as.data.frame(cbind(age))
 ```
 
 
@@ -100,7 +100,7 @@ new.test <- cbind(all.age,all.sex)
 
 #dealing with city 
 #we convert all features to indictor vriables
-```{r}
+``{r}
 city = test$city
 city_intersect = intersect(train$city,test$city)
 city_intersect
@@ -127,7 +127,7 @@ new.test <- cbind(new.test,city_matrix)
 
 
 ##dealing with province
-```{r}
+``{r}
 province = test$province
 province_intersect = intersect(train$province,test$province)
 province_intersect
@@ -254,7 +254,7 @@ new.test <- cbind(new.test,symptoms_number)
 
 ##dealing with sympotoms
 
-```{r}
+``{r}
 ##1. pre-processiong with text data 
 #TODO: (optional) add feature no_symptoms
 # train symptoms
@@ -289,7 +289,7 @@ for (i in 1:nrow(test_symptoms)){
 
 ```
 
-```{r}
+``{r}
 ##extract feature from test data
 #Find interection of symptoms in train and test
 symptoms_intersect=intersect(train_symptoms$train_symptoms,test_symptoms$test_symptoms)
