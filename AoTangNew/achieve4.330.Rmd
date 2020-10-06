@@ -205,6 +205,7 @@ pred3
 ```
 
 ```{r}
+##TODO BUG: train_ao only have 200+ row, need expand to 400+
 rf2 = randomForest(duration ~ ., data = train_ao)
 pred4 = predict(rf2, test_ao)
 pred4
