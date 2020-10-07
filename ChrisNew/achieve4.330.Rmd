@@ -1,0 +1,362 @@
+---
+title: "Untitled"
+author: "Ao Tang"
+date: "2020/10/6"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+train <- read.table('train2.txt',sep = ',',header = TRUE, fill = TRUE)
+test <- read.table('test2.txt',sep = ',',header = TRUE, fill = TRUE)
+
+train_chris <- read.table('cleaned_train.csv',sep = ',',header = TRUE, fill = TRUE)
+test_chris <- read.table('cleaned_test.csv',sep = ',',header = TRUE, fill = TRUE)
+
+train_ao <- read.table('cleaned_train.txt',sep = ',',header = TRUE, fill = TRUE)
+test_ao <- read.table('cleaned_test.txt',sep = ',',header = TRUE, fill = TRUE)
+```
+
+
+```{r}
+###merge add city 
+temp = as.data.frame(table(train$city))
+most_freq = temp[order(-temp$Freq),]
+most_freq[1:5,1]
+
+train_chris$city.38fc4 = train_ao$city.38fc4
+train_chris$city.6d709 = train_ao$city.6d709
+train_chris$city.247e5 = train_ao$city.247e5
+train_chris$city.d7cac = train_ao$city.d7cac
+train_chris$city.2720c = train_ao$city.2720c
+```
+```{r}
+###merge add country
+
+temp = as.data.frame(table(train$country))
+most_freq = temp[order(-temp$Freq),]
+most_freq[1:5,1]
+
+train_chris$country.59dcd = train_ao$country.59dcd
+train_chris$country.fb9d7 = train_ao$country.fb9d7
+train_chris$country.c263d = train_ao$country.c263d
+train_chris$country.d019a = train_ao$country.d019a
+train_chris$country.38fc4 = train_ao$country.38fc4
+```
+
+
+```{r}
+###merge add country
+
+temp = as.data.frame(table(train$V1))
+most_freq = temp[order(-temp$Freq),]
+most_freq[1:5,1]
+
+train_chris$V1.b6ab9 = train_ao$V1.b6ab9
+train_chris$V1.35843 = train_ao$V1.35843
+train_chris$V1.d68ec = train_ao$V1.d68ec
+train_chris$V1.dd554 = train_ao$V1.dd554
+train_chris$V1.10775 = train_ao$V1.10775
+
+
+train_chris$symptoms.fever = train_ao$symptoms.fever
+train_chris$symptoms.cough = train_ao$symptoms.cough
+```
+
+
+##we convert confirmed date to numeric value
+```{r}
+confirmed = train$confirmed
+for (i in 1:length(confirmed)){
+  confirmed[i]=as.POSIXct(confirmed[i], format='%d.%m.%Y')
+  if (is.na(confirmed[i])){confirmed[i] = 'null'}
+  }
+confirmed = as.numeric(confirmed)
+mu <- mean(confirmed[!is.na(confirmed)])
+library(tidyverse)
+confirmed = replace_na(confirmed,mu)
+train_chris$confirmed=confirmed
+```
+
+#extract extra feature: 
+```{r}
+#confirmed = replace_na(confirmed,mu)
+#train_chris$diff_day = difftime(strptime(train$confirmed, , format="%d.%m.%Y"),strptime('01.01.2020' , format="%d.%m.%Y"), units = 'days')
+```
+
+
+
+
+
+test set 
+---
+```{r}
+###merge add city 
+temp = as.data.frame(table(test$city))
+most_freq = temp[order(-temp$Freq),]
+most_freq[1:5,1]
+
+test_chris$city.38fc4 = test_ao$city.38fc4
+test_chris$city.6d709 = test_ao$city.6d709
+test_chris$city.247e5 = test_ao$city.247e5
+test_chris$city.d7cac = test_ao$city.d7cac
+test_chris$city.2720c = test_ao$city.2720c
+```
+```{r}
+###merge add country
+
+temp = as.data.frame(table(test$country))
+most_freq = temp[order(-temp$Freq),]
+most_freq[1:5,1]
+
+test_chris$country.59dcd = test_ao$country.59dcd
+test_chris$country.fb9d7 = test_ao$country.fb9d7
+test_chris$country.c263d = test_ao$country.c263d
+test_chris$country.d019a = test_ao$country.d019a
+test_chris$country.38fc4 = test_ao$country.38fc4
+```
+
+
+```{r}
+###merge add country
+
+temp = as.data.frame(table(test$V1))
+most_freq = temp[order(-temp$Freq),]
+most_freq[1:5,1]
+
+test_chris$V1.b6ab9 = test_ao$V1.b6ab9
+test_chris$V1.35843 = test_ao$V1.35843
+test_chris$V1.d68ec = test_ao$V1.d68ec
+test_chris$V1.dd554 = test_ao$V1.dd554
+test_chris$V1.10775 = test_ao$V1.10775
+
+
+test_chris$symptoms.fever = test_ao$symptoms.fever
+test_chris$symptoms.cough = test_ao$symptoms.cough
+```
+
+
+##we convert confirmed date to numeric value
+```{r}
+confirmed = test$confirmed
+for (i in 1:length(confirmed)){
+  confirmed[i]=as.POSIXct(confirmed[i], format="%d.%m.%Y")
+  if (is.na(confirmed[i])){confirmed[i] = 'null'}
+  }
+confirmed = as.numeric(confirmed)
+mu <- mean(confirmed[!is.na(confirmed)])
+library(tidyverse)
+confirmed = replace_na(confirmed,mu)
+test_chris$confirmed=confirmed
+```
+
+#extract extra feature: 
+```{r}
+#confirmed = replace_na(confirmed,mu)
+#test_chris$diff_day = difftime(strptime(test$confirmed, , format="%d.%m.%Y"),strptime('01.01.2020', format="%d.%m.%Y"), units = 'days')
+```
+
+
+
+
+
+
+
+```{r}
+pre_model = lm(duration~age+confirmed+symptoms_number,data = train_chris)
+pre_model
+
+age = train_chris$age+ 1
+confirmed = train_chris$confirmed+ 3600
+symptoms_number = train_chris$symptoms_number+ 1 
+
+new_data =as.data.frame(cbind(confirmed,age,symptoms_number))
+
+pred1 = predict(pre_model, new_data)
+pred1
+
+new_train = train_chris
+new_train$age = new_data$age
+new_train$confirmed = new_data$confirmed
+new_train$duration = pred1
+
+new_train = rbind(train_chris,new_train)
+```
+
+```{r}
+library(randomForest)
+rf1 = randomForest(duration ~ ., data = new_train)
+pred2 = predict(rf1, test_chris)
+pred2
+```
+
+
+```{r}
+
+new_train= subset(new_train, select = -c(country,V1))
+test_chris= subset(test_chris, select = -c(country,V1))
+model1  = lm(duration~.,data = new_train)
+pred3 = predict(model1, test_chris)
+pred3
+```
+
+```{r}
+##TODO BUG: train_ao only have 200+ row, need expand to 400+
+rf2 = randomForest(duration ~ ., data = train_ao)
+pred4 = predict(rf2, test_ao)
+pred4
+```
+
+
+```{r}
+pred = 0.3*pred2 + 0.4*pred3 + 0.3*pred4
+pred
+```
+
+#### 4.33055
+
+```{r}
+kaggle = read.table(file = 'baseline2.txt', sep = ',', header = T, row.names = NULL)
+
+kaggle$duration = pred
+
+write.table(kaggle, file = 'kaggle1.txt', sep = ',', quote = F, row.name = FALSE)
+```
+
+
+Done by Chris On Oct.07
+```{r lm}
+# test for best linear model
+train = new_train
+train$month = NULL
+train$sex = NULL
+test = test_chris
+test$month = NULL
+test$sex = NULL
+
+
+initial.1 <- lm(data=train, formula = duration~ 1)
+final.1 <- lm(data=train, formula=duration~.)
+
+step1 <- step(object=initial.1, scope=list(upper=final.1), 
+              k = log(nrow(train)))
+
+MSE.matrix = matrix(NA,nrow = 200,ncol = 2)
+colnames(MSE.matrix) <- c("MSE","MSPE")
+for (r in 1:200) {
+  print(paste0(r," in ",200))
+  train_index = sample(1:nrow(train),0.8*nrow(train))
+  train_data = train[train_index,]
+  valid_data = train[-train_index,]
+  # Fit model
+  model.linear = lm(duration ~ confirmed + symptoms_number+ age,data = train_data)
+  # MSE of the train data
+  MSE.matrix[r,1] = mean((predict(model.linear,data = train_data) - train_data$duration)^2)
+  # MSE of the valid data
+  MSE.matrix[r,2] = mean((predict(model.linear,newdata = valid_data) - valid_data$duration)^2)
+  # Age: 1
+  # confirmed: 25
+  # symptoms_number: 26
+  # Sex: 2:5
+  # country: 7:16
+  # V1: 17:24
+}
+print(paste0("mean = ", apply(MSE.matrix,2,mean),", sd = ",apply(MSE.matrix,2,sd)))
+
+kaggle = read.table(file = 'baseline2.txt', sep = ',', header = T, row.names = NULL)
+kaggle$duration  = predict(step1,newdata = test)
+write.table(kaggle, file = 'kaggle1.txt', sep = ',', quote = F, row.name = FALSE)
+
+
+
+```
+
+Knn performes very bad in this data using the whold
+```{r knn}
+# Test for knn
+Knn_vector = rep(NA,400)
+Knn_matrix = matrix(NA,nrow = 100,ncol = 2)
+for (i in 1:100) {
+  print(paste0(i," of ",100))
+  for(r in 1:400){
+    train_index = sample(1:nrow(train),0.8*nrow(train))
+    train_data = train[train_index,]
+    valid_data = train[-train_index,]
+    Knn_vector[r] = mean((as.numeric(knn(train = train_data[,-4], test = valid_data[,-4],cl = train_data[,'duration',drop=TRUE], k=i)) - valid_data$duration)^2)
+  }
+  Knn_matrix[i,] = c(i,mean(Knn_vector))
+}
+
+as.numeric(knn(train = train[,-3], test = test[,-1],cl = train[,'duration',drop=TRUE], k=100))
+
+
+```
+
+
+
+```{r ensemble}
+MSE.matrix = matrix(NA,nrow = 200,ncol = 6)
+colnames(MSE.matrix) = c("MSE.Regression","MSPE.Regression","MSE.forest","MSPE.forest","MSE.Ensemble","MSPE.Ensemble")
+
+Ensemble_parameter_matrix = matrix(NA,nrow = 66,ncol = 8)
+colnames(Ensemble_parameter_matrix) = c("i",'j',"MSE.Regression","MSPE.Regression","MSE.forest","MSPE.forest","MSE.Ensemble","MSPE.Ensemble")
+k=1
+for (i in seq(from = 0, to = 1, by = 0.1)){
+  for (r in 1:200) {
+    print(paste0(r," of ",200))
+    train_index = sample(1:nrow(train),0.8*nrow(train))
+    train_data = train[train_index,]
+    valid_data = train[-train_index,]
+    
+    # Regression model
+    model.Regression <- lm(duration ~ confirmed + symptoms_number + V1.10775 + country.38fc4, data = train_data)
+    # MSE of the train data
+    MSE.matrix[r,1] = mean((predict(model.Regression,data = train_data) - train_data$duration)^2)
+    # MSE of the valid data
+    MSE.matrix[r,2] = mean((predict(model.Regression,newdata = valid_data) - valid_data$duration)^2)
+    
+    # Random Forest Regression
+    model.forest = randomForest(duration ~ ., data = train_data)
+    # MSE of the train data
+    MSE.matrix[r,3] = mean((predict(model.forest,data = train_data) - train_data$duration)^2)
+    # MSE of the valid data
+    MSE.matrix[r,4] = mean((predict(model.forest,newdata = valid_data) - valid_data$duration)^2)
+    
+    
+    # # Knn
+    # predict.knn = knn(train = train_data[,-4], test = valid_data[,-4],cl = train_data[,'duration',drop=TRUE], k=23)
+    # # MSE of the valid data
+    # MSE.matrix[r,5] = mean((as.numeric(predict.knn) - valid_data$duration)^2)
+    
+    # MSE of the train data 0.5*Regression + 0.5*Forest
+    MSE.matrix[r,5] = mean((predict(model.Regression, newdata = train_data)*i + predict(model.forest, newdata = train_data)*(1-i) - train_data$duration)^2)#+ as.numeric(predict.knn)*(1-i-j) 
+    # MSE of the valid data 0.5*Regression + 0.5*Forest
+    MSE.matrix[r,6] = mean((predict(model.Regression, newdata = valid_data)*i + predict(model.forest, newdata = valid_data)*(1-i) - valid_data$duration)^2) #+ as.numeric(predict.knn)*(1-i-j)  
+  }
+  Ensemble_parameter_matrix[k,] = c(i,1-i,apply(MSE.matrix,2,mean))
+  k=k+1
+  print(Ensemble_parameter_matrix)
+}
+temp = as.data.frame(Ensemble_parameter_matrix)
+write.csv(temp,"temp_Ensemble_data.csv",row.names=FALSE)
+
+model.Regression <- lm(duration ~ confirmed + symptoms_number + V1.10775 + country.38fc4, data = train)
+model.forest = randomForest(duration ~ ., data = train)
+kaggle = read.table(file = 'baseline2.txt', sep = ',', header = T, row.names = NULL)
+kaggle$duration = predict(model.Regression, newdata = test)*1 + predict(model.forest, newdata = test)*0  #+ as.numeric(predict.knn)*(1-i-j)  
+write.table(kaggle, file = 'kaggle1.txt', sep = ',', quote = F, row.name = FALSE)
+```
+
+
+
+
+
+
+
+
+
+

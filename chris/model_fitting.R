@@ -7,8 +7,8 @@ library(rpart)
 library(randomForest)
 library(glmnet)
 
-train = read.csv("~/Documents/GitHub/stat440-Covid-19/chris/cleaned_train_AoTang.txt",sep = ",",header = T)
-test = read.csv("~/Documents/GitHub/stat440-Covid-19/chris/cleaned_test_AoTang.txt",sep = ",",header = T)
+train = read.csv("~/Documents/GitHub/stat440-Covid-19/chris/cleaned_train.csv",sep = ",",header = T)
+test = read.csv("~/Documents/GitHub/stat440-Covid-19/chris/cleaned_test.csv",sep = ",",header = T)
 predict = read.csv("~/Documents/GitHub/stat440-Covid-19/chris/baseline2.txt",sep = ",",header = T)
 
 # Stepwise comparison
@@ -21,6 +21,8 @@ step1 <- step(object=initial.1, scope=list(upper=final.1),
 
 MSE.matrix = matrix(NA,nrow = 500,ncol = 1)
 # colnames(MSE.matrix) <- c("MSE","MSPE")
+train$confirmed <- as.Date(train$confirmed, format = "%Y-%m-%d")
+test$confirmed <- as.Date(test$confirmed, format = "%Y-%m-%d")
 
 # Train-valid split
 for (r in 1:500) {
@@ -80,6 +82,7 @@ model.forest = model.forest = randomForest(duration ~ ., data = train)
 predict$duration = predict(model.linear, newdata = test)/2 + predict(model.forest, newdata = test)/2
 write.csv(predict,"predicted.csv",row.names=FALSE)
 
+predict$duration = 0.5*lm(duration~confirmed + age + symptoms_number,data = train)+0.5*model.forest = model.forest = randomForest(duration ~ ., data = train)
 predict$duration = as.numeric(knn(train = as.data.frame(train[,26]), test = as.data.frame(test[,26]),cl = train[,'duration',drop=TRUE], k=10))-1
 write.csv(predict,"predicted1.csv",row.names=FALSE)
 ###########################knn approach, need to convert factors to numeric#######################
