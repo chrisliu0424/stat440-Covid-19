@@ -71,9 +71,9 @@ for (i in 1:100) {
 }
 Knn_matrix
 
-model.Regression <- lm(duration ~ age + confirmed, data = train)
-model.forest = randomForest(duration ~ ., data = train)
-predict$duration = predict(model.Regression, newdata = test)*0.5 + predict(model.forest, newdata = test)*0.5 #+ as.numeric(knn(train = select(train,-c('duration')), test = test,cl = train[,'duration',drop=TRUE], k=10))*0.3
+model.Regression <- lm(duration ~ confirmed + symptoms_number, data = train)
+model.forest = randomForest(duration ~ ., data = train[,c(1,25,26,27,2:5)])
+predict$duration = predict(model.Regression, newdata = test)*0.5 + predict(model.forest, newdata = test)*0.5 + as.numeric(knn(train = train[,c(1,25,26,17:24)], test = test[,c(1,25,26,17:24)],cl = train[,'duration',drop=TRUE], k=23))*0.0
 write.csv(predict,"predicted.csv",row.names=FALSE)
 
 
