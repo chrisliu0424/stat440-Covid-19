@@ -248,7 +248,7 @@ step1 <- step(object=initial.1, scope=list(upper=final.1),
 MSE.matrix = matrix(NA,nrow = 200,ncol = 2)
 colnames(MSE.matrix) <- c("MSE","MSPE")
 for (r in 1:200) {
-  print(paste0(r," in ",200))
+  # print(paste0(r," in ",200))
   train_index = sample(1:nrow(train),0.8*nrow(train))
   train_data = train[train_index,]
   valid_data = train[-train_index,]
@@ -276,7 +276,7 @@ write.table(kaggle, file = 'kaggle1.txt', sep = ',', quote = F, row.name = FALSE
 ```
 
 Knn performes very bad in this data using the whold
-```{r knn}
+``{r knn}
 # Test for knn
 Knn_vector = rep(NA,400)
 Knn_matrix = matrix(NA,nrow = 100,ncol = 2)
@@ -294,69 +294,93 @@ for (i in 1:100) {
 as.numeric(knn(train = train[,-3], test = test[,-1],cl = train[,'duration',drop=TRUE], k=100))
 
 
+``
+
+Gradient Boosting Of Regression Trees in R
+```{r }
+library(caret);library(gbm)
+
+grid<-expand.grid(.n.trees=seq(100,500,by=200),.interaction.depth=seq(1,4,by=1),.shrinkage=c(.001,.01,.1),
+                  .n.minobsinnode=10)
+control<-trainControl(method = "CV")
+
+gbm.train<-train(duration ~ .,data=train_data,method='gbm',trControl=control,tuneGrid=grid)
+gbm.train
+```
+
+```{r }
+library(caret);library(gbm)
+
+grid<-expand.grid(.n.trees=seq(100,500,by=200),.interaction.depth=seq(1,4,by=1),.shrinkage=c(.001,.01,.1),
+                  .n.minobsinnode=10)
+control<-trainControl(method = "CV")
+
+gbm.train<-train(duration ~ symptoms_number + confirmed,data=train_data,method='gbm',trControl=control,tuneGrid=grid)
+gbm.train
 ```
 
 
+```{r best model}
+model.boost <- gbm(duration ~ symptoms_number + confirmed, data=train_data,n.trees = 500,interaction.depth = 1,shrinkage = 0.01,distribution = 'gaussian')
+gbm.test<-predict(model.boost,newdata = valid_data,n.trees = 500)
+gbm.resid<- gbm.test-valid_data$duration
+mean(gbm.resid^2)
 
-```{r ensemble}
-MSE.matrix = matrix(NA,nrow = 200,ncol = 6)
-colnames(MSE.matrix) = c("MSE.Regression","MSPE.Regression","MSE.forest","MSPE.forest","MSE.Ensemble","MSPE.Ensemble")
-
-Ensemble_parameter_matrix = matrix(NA,nrow = 66,ncol = 8)
-colnames(Ensemble_parameter_matrix) = c("i",'j',"MSE.Regression","MSPE.Regression","MSE.forest","MSPE.forest","MSE.Ensemble","MSPE.Ensemble")
-k=1
-for (i in seq(from = 0, to = 1, by = 0.1)){
-  for (r in 1:200) {
-    print(paste0(r," of ",200))
-    train_index = sample(1:nrow(train),0.8*nrow(train))
-    train_data = train[train_index,]
-    valid_data = train[-train_index,]
-    
-    # Regression model
-    model.Regression <- lm(duration ~ confirmed + symptoms_number + V1.10775 + country.38fc4, data = train_data)
-    # MSE of the train data
-    MSE.matrix[r,1] = mean((predict(model.Regression,data = train_data) - train_data$duration)^2)
-    # MSE of the valid data
-    MSE.matrix[r,2] = mean((predict(model.Regression,newdata = valid_data) - valid_data$duration)^2)
-    
-    # Random Forest Regression
-    model.forest = randomForest(duration ~ ., data = train_data)
-    # MSE of the train data
-    MSE.matrix[r,3] = mean((predict(model.forest,data = train_data) - train_data$duration)^2)
-    # MSE of the valid data
-    MSE.matrix[r,4] = mean((predict(model.forest,newdata = valid_data) - valid_data$duration)^2)
-    
-    
-    # # Knn
-    # predict.knn = knn(train = train_data[,-4], test = valid_data[,-4],cl = train_data[,'duration',drop=TRUE], k=23)
-    # # MSE of the valid data
-    # MSE.matrix[r,5] = mean((as.numeric(predict.knn) - valid_data$duration)^2)
-    
-    # MSE of the train data 0.5*Regression + 0.5*Forest
-    MSE.matrix[r,5] = mean((predict(model.Regression, newdata = train_data)*i + predict(model.forest, newdata = train_data)*(1-i) - train_data$duration)^2)#+ as.numeric(predict.knn)*(1-i-j) 
-    # MSE of the valid data 0.5*Regression + 0.5*Forest
-    MSE.matrix[r,6] = mean((predict(model.Regression, newdata = valid_data)*i + predict(model.forest, newdata = valid_data)*(1-i) - valid_data$duration)^2) #+ as.numeric(predict.knn)*(1-i-j)  
-  }
-  Ensemble_parameter_matrix[k,] = c(i,1-i,apply(MSE.matrix,2,mean))
-  k=k+1
-  print(Ensemble_parameter_matrix)
-}
-temp = as.data.frame(Ensemble_parameter_matrix)
-write.csv(temp,"temp_Ensemble_data.csv",row.names=FALSE)
-
-model.Regression <- lm(duration ~ confirmed + symptoms_number + V1.10775 + country.38fc4, data = train)
-model.forest = randomForest(duration ~ ., data = train)
+model.boost <- gbm(duration ~ confirmed + symptoms_number + V1.10775 + country.38fc4,data=train,n.trees = 500,interaction.depth = 1,shrinkage = 0.01,distribution = 'gaussian')
+pred5<-predict(model.boost,newdata = test,n.trees = 500)
 kaggle = read.table(file = 'baseline2.txt', sep = ',', header = T, row.names = NULL)
-kaggle$duration = predict(model.Regression, newdata = test)*1 + predict(model.forest, newdata = test)*0  #+ as.numeric(predict.knn)*(1-i-j)  
+kaggle$duration = pred5
 write.table(kaggle, file = 'kaggle1.txt', sep = ',', quote = F, row.name = FALSE)
 ```
 
 
+```{r ensemble model1}
+model1 = lm(duration ~ confirmed + symptoms_number + V1.10775 + country.38fc4, data = train_data)
+ensemble.pred1 = predict(model1,newdata = valid_data)
+```
+
+```{r ensemble model2}
+model2 = lm(duration ~ ., data = train_data)
+ensemble.pred2 = predict(model2,newdata = valid_data)
+```
+
+```{r ensemble model3}
+model3 = randomForest(duration ~ .,data = train_data)
+ensemble.pred3 = predict(model3,newdata =valid_data)
+```
+
+```{r ensemble model4}
+model4 <- gbm(duration ~ .,data=train_data,n.trees = 300,interaction.depth = 3,shrinkage = 0.01,distribution = 'gaussian')
+ensemble.pred4 <- predict(model4,newdata = valid_data,n.trees = 300)
+```
+
+```{r ensemble model5}
+model5 <- gbm(duration ~ age+confirmed+symptoms_number,data=train_data,n.trees = 500,interaction.depth = 1,shrinkage = 0.01,distribution = 'gaussian')
+ensemble.pred5 <- predict(model5,newdata = valid_data,n.trees = 500)
+
+```
 
 
+```{r ensemble coef}
+ensemble_matrix = cbind(ensemble.pred1,ensemble.pred2,ensemble.pred3,ensemble.pred4,ensemble.pred5)
+ensemble_model = lm(valid_data$duration~ensemble_matrix-1)
+ensemble_coef = ensemble_model$coefficients
+```
 
+```{r final model}
+final.model1 = lm(duration ~ confirmed + symptoms_number + V1.10775 + country.38fc4, data = train)
+final.model2 = lm(duration ~ ., data = train)
+final.model3 = randomForest(duration ~ .,data = train)
+final.model4 <- gbm(duration ~ .,data=train,n.trees = 300,interaction.depth = 3,shrinkage = 0.01,distribution = 'gaussian')
+final.model5 <- gbm(duration ~ age+confirmed+symptoms_number,data=train,n.trees = 500,interaction.depth = 1,shrinkage = 0.01,distribution = 'gaussian')
+final.pred1 = predict(final.model1,newdata=test)
+final.pred2 = predict(final.model2,newdata=test)
+final.pred3 = predict(final.model3,newdata=test)
+final.pred4 = predict(final.model4,newdata=test)
+final.pred5 = predict(final.model5,newdata=test)
+final_prediction = cbind(final.pred1,final.pred2,final.pred3,final.pred4,final.pred5) %*% ensemble_coef
 
-
-
-
-
+kaggle = read.table(file = 'baseline2.txt', sep = ',', header = T, row.names = NULL)
+kaggle$duration = final_prediction
+write.table(kaggle, file = 'kaggle1.txt', sep = ',', quote = F, row.name = FALSE)
+```
