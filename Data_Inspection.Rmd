@@ -11,6 +11,138 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r read data}
 rm(list =ls())
-train <- read.table('train2.txt',sep = ',',header = TRUE, fill = TRUE)
+train <- read.table('~/Documents/GitHub/stat440-Covid-19/ChrisNew/train2.txt',sep = ',',header = TRUE, fill = TRUE)
+```
+
+##Dealing with Age
+```{r}
+age <- train$age
+##create different feature of age
+##Note that : max(age) = 96 , min(age) = NA
+age.missing = rep(0, nrow(train))
+
+#if age is an interval then we define it as mean
+for (i in 1:length(age)) {
+  if (grepl('-',age[i])) {
+    z = strsplit(age[i], '-')
+    age[i] = mean (as.numeric(c(z[[1]][1],z[[1]][2])))
+  }
+}
+
+age <- as.numeric(age)
+mu <- mean(age[!is.na(age)])
+library(tidyverse)
+age = replace_na(age,mu)
+
+#age = as.numeric(age)
+for (i in 1:length(age)) {
+  if (is.na(age[i]) || age[i] == '') {
+    age.missing[i] =1
+  }
+}
+
+train$age = age
+```
+
+##we convert confirmed date to numeric value
+```{r}
+confirmed = train$confirmed
+for (i in 1:length(confirmed)){
+  confirmed[i]=as.POSIXct(confirmed[i], format='%d.%m.%Y')
+  if (is.na(confirmed[i])){confirmed[i] = 'null'}
+  }
+confirmed = as.numeric(confirmed)
+mu <- mean(confirmed[!is.na(confirmed)])
+library(tidyverse)
+confirmed = replace_na(confirmed,mu)
+train$confirmed=confirmed
+```
+
+Adding symptoms_number
+```{r}
+symptoms_number = NULL
+
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+symptoms = trim(train$symptoms)
+for (i in 1:dim(train)[1]) {
+  x = symptoms[i]
+  if(x == ''){
+    symptoms_number[i] = 0
+  }else {
+    symptoms_number[i] = lengths(regmatches(x, gregexpr(";", x))) + 1
+  }
+}
+
+train <- cbind(train,symptoms_number)
+```
+
+Variable age
+```{r}
+plot(train$age,train$duration)
+summary(lm(duration~age,data=train))
+```
+Conclusion: Age is not related to duration, Multiple R-squared:  0.01026,	Adjusted R-squared:  0.005696 
+
+Variable Sex
+```{r}
+table(as.factor(train$sex))
+plot(as.factor(train$sex),train$duration)
+summary(lm(duration~sex,data=train))
+```
+Conclusion: Age is not related to duration, Multiple R-squared:  0.02064,	Adjusted R-squared:  0.00233 
+
+Variable Country
+```{r}
+table(as.factor(train$country))
+plot(as.factor(train$country),train$duration,las=2)
+summary(lm(duration~country,data=train))
+```
+Conclusion: Country is a bit better than Sex and Age, Multiple R-squared:  0.09577,	Adjusted R-squared:  0.04771 
+
+Variable V1
+```{r}
+table(as.factor(train$V1))
+plot(as.factor(train$V1),train$duration,las=2)
+summary(lm(duration~V1,data=train))
+```
+Conclusion: V1 is a bit better than the previous three but lower R-square, Multiple R-squared:0.08332,	Adjusted R-squared:  0.03925 
+
+Variable confirmed
+```{r}
+plot(train$confirmed,train$duration,las=2)
+summary(lm(duration~confirmed,data=train))
+```
+Conclusion: confirmed is an useful variable, Multiple R-squared:  0.09297,	Adjusted R-squared:  0.08879
+
+Variable province
+```{r}
+table(as.factor(train$province))
+plot(as.factor(train$province),train$duration,las=2)
+summary(lm(duration~province,data=train))
+```
+Conclusion: province mostly p-value > 0.05,but the highest R-squared, Multiple R-squared: 0.2799,	Adjusted R-squared: 0.123 
+
+Variable city
+```{r}
+table(as.factor(train$city))
+plot(as.factor(train$city),train$duration,las=2)
+summary(lm(duration~city,data=train))
+```
+Conclusion: City not considerable, Multiple R-squared:  0.4149,	Adjusted R-squared:  -0.1389 
+
+Variable Symptoms_number
+```{r}
+plot(train$symptoms_number,train$duration,las=2)
+summary(lm(duration~symptoms_number,data=train))
+```
+Conclusion: Symptoms_number is useful(p<0.05), but extremely low R-squared.Multiple R-squared:  0.0195,	Adjusted R-squared:  0.01498 
+
+```{r BIC}
+train$symptoms = NULL
+train$outcome = NULL
+initial.1 <- lm(formula=duration~ 1,data=train)
+final.1 <- lm(formula=duration~.,data=train)
+
+step1 <- step(object=initial.1, scope=list(upper=final.1))
 
 ```
