@@ -9,7 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
 ##Data pre-processing 
 ```{r}
 rm(list = ls())
@@ -47,36 +46,47 @@ all.age <- as.data.frame(cbind(age))
 
 #dealing with sex
 #we convert all features to indictor vriables
+#TODO: <4 create a dummy variable call others
 ```{r}
-#we only select those feature both appear in train and test
-intersect_feature = union(train$sex,test$sex)
-intersect_feature
-
+#we only select the feature that appears >4 times in training set
 sex = test$sex
+sex_union = union(train$sex,test$sex)
+sex_union = c(sex_union,'others')
+##create a data frame containing all union sex 
+sex_matrix = as.data.frame(matrix(ncol = length(sex_union), nrow = length(sex)))
 
-sex.38fc4 = rep(0, nrow(test))
-sex.8a467 = rep(0, nrow(test))
-sex.d516d = rep(0, nrow(test))
-sex.f7f7c = rep(0, nrow(test))
-sex.1e6ee = rep(0, nrow(test))
+##crreate a array of each feature in sex
+feature = c()
+for (each_sex in sex_union) {feature = append(feature,paste0('sex.',each_sex))}
+
+colnames(sex_matrix) = feature
 
 for (i in 1:length(sex)) {
-  if (grepl('38fc4',sex[i])) {sex.38fc4[i] = 1}
-  else if (grepl('8a467',sex[i])) {sex.8a467[i] = 1}
-  else if (grepl('d516d',sex[i])) {sex.d516d[i] = 1}
-  else if (grepl('f7f7c',sex[i])) {sex.f7f7c[i] = 1}
-  else if (grepl('1e6ee',sex[i])) {sex.1e6ee[i] = 1}
-  else if (is.na(sex[i])) {sex.missing[i] = 1}
+  for (j in 1:length(feature)) {
+    if (grepl(sex[i],feature[j])) {
+      sex_matrix[i,j] = 1
+    }
+    else {sex_matrix[i,j] = 0}
+  }
 }
-
-all.sex <- as.data.frame(cbind(sex.38fc4, sex.8a467, sex.d516d, sex.f7f7c,sex.1e6ee))
-new.test <- cbind(all.age,all.sex)
+low_index = apply(sex_matrix, 2, sum) < 4
+for (i in 1:length(sex)) {
+  if (sum(sex_matrix[i,low_index])>0){
+    sex_matrix[i,'sex.others'] = 1
+  }
+}
+new_low_index = apply(sex_matrix, 2, sum) < 4
+sex_matrix[,new_low_index] = NULL
+new.test <- cbind(all.age,sex_matrix)
 ```
 
 ##dealing with province
+#TODO: <4 create a dummy variable call others
 ```{r}
+#we only select the feature that appears >4 times in training set
 province = test$province
 province_union = union(train$province,test$province)
+province_union = c(province_union,'others')
 ##create a data frame containing all union province 
 province_matrix = as.data.frame(matrix(ncol = length(province_union), nrow = length(province)))
 
@@ -94,15 +104,25 @@ for (i in 1:length(province)) {
     else {province_matrix[i,j] = 0}
   }
 }
+low_index = apply(province_matrix, 2, sum) < 4
+for (i in 1:length(province)) {
+  if (sum(province_matrix[i,low_index])>0){
+    province_matrix[i,'province.others'] = 1
+  }
+}
+new_low_index = apply(province_matrix, 2, sum) < 4
+province_matrix[,new_low_index] = NULL
+
 new.test <- cbind(new.test,province_matrix)
 ```
 
 ##dealing with country
-
+#TODO: <4 create a dummy variable call others
 ```{r}
+#we only select the feature that appears >4 times in training set
 country = test$country
 country_union = union(train$country,test$country)
-
+country_union = c(country_union,'others')
 ##create a data frame containing all union country 
 country_matrix = as.data.frame(matrix(ncol = length(country_union), nrow = length(country)))
 
@@ -120,15 +140,25 @@ for (i in 1:length(country)) {
     else {country_matrix[i,j] = 0}
   }
 }
+low_index = apply(country_matrix, 2, sum) < 4
+for (i in 1:length(country)) {
+  if (sum(country_matrix[i,low_index])>0){
+    country_matrix[i,'country.others'] = 1
+  }
+}
+new_low_index = apply(country_matrix, 2, sum) < 4
+country_matrix[,new_low_index] = NULL
+
 new.test <- cbind(new.test,country_matrix)
 ```
 
 ##dealing with V1
-
+#TODO: <4 create a dummy variable call others
 ```{r}
+#we only select the feature that appears >4 times in training set
 V1 = test$V1
 V1_union = union(train$V1,test$V1)
-
+V1_union = c(V1_union,'others')
 ##create a data frame containing all union V1 
 V1_matrix = as.data.frame(matrix(ncol = length(V1_union), nrow = length(V1)))
 
@@ -146,6 +176,15 @@ for (i in 1:length(V1)) {
     else {V1_matrix[i,j] = 0}
   }
 }
+low_index = apply(V1_matrix, 2, sum) < 4
+for (i in 1:length(V1)) {
+  if (sum(V1_matrix[i,low_index])>0){
+    V1_matrix[i,'V1.others'] = 1
+  }
+}
+new_low_index = apply(V1_matrix, 2, sum) < 4
+V1_matrix[,new_low_index] = NULL
+
 new.test <- cbind(new.test,V1_matrix)
 ```
 ##dealing with confirmed
@@ -232,11 +271,12 @@ for (i in 1:length(symptoms)) {
   }
 }
 ##keeps only fever and cough
-##add duration and symptoms.feature in new.train
+##add duration and symptoms.feature in new.test
 new.test <- cbind(new.test,symptoms_matrix[,c(4,5)])
 ```
 
 ```{r}
 write.table(new.test, file = 'cleaned_test.txt', sep= ',')
+head(new.test)
 ```
 
