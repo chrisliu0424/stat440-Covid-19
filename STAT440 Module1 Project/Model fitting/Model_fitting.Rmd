@@ -1,0 +1,159 @@
+---
+title: "STAT440 Model Fitting"
+author: "Ao Tang (301297684),Xiaoliang Zhang (301297782),Zhengtang Lin (301310788),Junchao Liu (301299668)"
+date: "16/10/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(glmnet)
+library(MASS)
+library(randomForest)
+library(pls)
+```
+
+# Read in Data
+```{r }
+rm(list=ls())
+train = read.table("cleaned_train.txt",sep = ",",header = T)
+test = read.table("cleaned_test.txt",sep = ",",header = T)
+kaggle = read.csv("~/Documents/GitHub/stat440-Covid-19/chris/baseline2.txt",sep = ",",header = T)
+```
+
+# CV for all the methods
+```{r lm}
+V=10
+n = nrow(train)
+folds = floor((sample.int(n)-1)*V/n) + 1 
+MSPE = matrix(NA,ncol = 6, nrow = 10)
+rownames(MSPE) <- c("fold #1","fold #2","fold #3","fold #4","fold #5","fold #6","fold #7","fold #8","fold #9","fold #10")
+colnames(MSPE) <- c('lm','StepWise','Ridge',"LASSO-min","LASSO-1SE","RF")
+for(v in 1:V){
+  train_data = train[folds!=v,]
+  valid_data = train[folds==v,]
+  train_matrix = model.matrix(duration ~ . ,train_data)
+  valid_matrix = model.matrix(duration ~ . ,valid_data)
+  
+  # Linear Regression
+  cv.lm <- lm(duration~.,data = train_data)
+  cv.lm.pred <- predict(cv.lm,newdata = valid_data)
+  MSPE[v,1] =  mean((valid_data[,"duration"] - cv.lm.pred)^2)
+  
+  # Stepwise Selection
+  initial <- lm(formula = duration~ 1,data = train_data)
+  final <- lm(formula = duration ~ .,data = train_data)
+  cv.step_model = step(object=initial, scope=list(upper=final))
+  cv.step_pred = predict(cv.step_model, newdata = valid_data)
+  MSPE[v,2] =  mean(as.vector((valid_data[,"duration"] - cv.step_pred)^2))
+  
+  # Ridge Regression
+  cv.ridge<- lm.ridge(duration ~., lambda = seq(0, 100, .05), data=train_data)
+  cv.ridge.coef = coef(cv.ridge)[which.min(cv.ridge$GCV),]
+  cv.ridge.pred = valid_matrix %*% cv.ridge.coef
+  MSPE[v,3] =  mean((valid_data[,"duration"] - cv.ridge.pred)^2)
+  
+  # LASSO
+  cv.lasso = cv.glmnet(x=train_matrix[,-1], y = train_data[,'duration'])
+  cv.lasso.min.pred = predict(cv.lasso, newx = valid_matrix[,-1],
+    s = cv.lasso$lambda.min, type = "response")
+  cv.lasso.1se.pred = predict(cv.lasso, newx = valid_matrix[,-1],
+    s = cv.lasso$lambda.1se, type = "response")
+  
+  # LASSO-min
+  MSPE[v,4] =  mean((valid_data[,"duration"] - cv.lasso.min.pred)^2)
+  # LASSO-1se
+  MSPE[v,5] =  mean((valid_data[,"duration"] - cv.lasso.1se.pred)^2)
+  
+  # Regression tree
+  cv.rf = randomForest(duration ~ ., data = train_data)
+  # # MSE of the valid data
+  MSPE[v,6] = mean((predict(cv.rf,newdata = valid_data) - valid_data$duration)^2)
+}
+boxplot(MSPE,main = paste0("Plot for MSPE on ",V,"-folds validation"))
+
+low.s = apply(MSPE, 1, min) 
+x11()
+boxplot(MSPE/low.s, ylim = c(1,2.5),
+        main=paste0("Plot for RMSPE on ",V,"-folds validation"))
+```
+
+
+## Making model
+
+# LASSO              
+```{r}
+matrix.X = model.matrix(duration~.,data=train)
+matrix.test = model.matrix(~.,data = test)
+lasso = cv.glmnet(x=matrix.X[,-1], y = train[,'duration'])
+lasso.min.pred = predict(lasso, newx = matrix.test[,-1],
+  s = lasso$lambda.min, type = "response")
+lasso.1se.pred = predict(lasso, newx = matrix.test[,-1],
+  s = lasso$lambda.1se, type = "response")
+
+kaggle$duration = lasso.min.pred
+write.csv(kaggle,'kaggle.csv',row.names = F)
+```
+
+# Random Forest
+```{r}
+rf = randomForest(duration ~ ., data = train, mtry=10, ntree=300)
+rf.pred = predict(rf,newdata = test)
+kaggle$duration = rf.pred
+write.csv(kaggle,'kaggle.csv',row.names = F)
+```
+
+# Stepwise
+```{r}
+initial <- lm(formula = duration~ 1,data = train)
+final <- lm(formula = duration ~ .,data = train)
+stepwise = step(object=initial, scope=list(upper=final))
+stepwise.pred = predict(stepwise, newdata = test)
+kaggle$duration = stepwise.pred
+write.csv(kaggle,'kaggle.csv',row.names = F)
+```
+
+# Ridge
+```{r}
+test.matrix = model.matrix(~.,data = test)
+ridge<- lm.ridge(duration ~., lambda = seq(0, 100, .05), data=train)
+ridge.coef = coef(ridge)[which.min(ridge$GCV),]
+ridge.pred = as.vector(test.matrix %*% ridge.coef)
+kaggle$duration = ridge.pred
+write.csv(kaggle,'kaggle.csv',row.names = F)
+```
+
+# lm(confirmed) lm(confirmed+age) 
+```{r}
+lm.fit = lm(duration ~ confirmed+age,data = train)
+lm.predict = predict(lm.fit,newdata = test)
+kaggle$duration = lm.predict
+write.csv(kaggle,'kaggle.csv',row.names = F)
+```
+
+# PLS
+```{r}
+pls <- plsr(duration ~ ., data = train, validation = "CV")
+pls.valid = pls$validation # All the CV information
+pls.PRESS = pls.valid$PRESS    # Sum of squared CV residuals
+pls.MSPE = pls.PRESS / nrow(train)  # MSPE for internal CV
+pls.ind.best = which.min(pls.MSPE) # Optimal number of components
+pls.pred = as.vector(predict(pls, test, ncomp = pls.ind.best))
+kaggle$duration = pls.pred
+write.csv(kaggle,'kaggle.csv',row.names = F)
+```
+
+# Ensemble
+```{r}
+rf.pred
+ridge.pred
+
+# [0.5,0.5,4.33429] [0.6,0.4,4.33297]
+final.pred = as.vector(0.5*rf.pred + 0.5*pls.pred)         
+
+kaggle$duration = final.pred
+write.csv(kaggle,'kaggle.csv',row.names = F)
+```

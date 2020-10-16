@@ -1,0 +1,419 @@
+---
+title: "STAT440 Data_Preprocessing"
+author: "Ao Tang (301297684),Xiaoliang Zhang (301297782),Zhengtang Lin (301310788),Junchao Liu (301299668)"
+date: "16/10/2020"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data pre-processing 
+```{r}
+rm(list = ls())
+train <- read.table('train2.txt',sep = ',',header = TRUE)
+test <- read.table('test2.txt',sep = ',',header = TRUE)
+```
+
+## Combine the two data frame
+```{r}
+train$is_train = T
+test$is_train = F
+train$Id = NA
+train$outcome = NULL
+test$duration = NA
+combined = rbind(train,test)
+```
+
+## Dealing with Age
+```{r}
+age <- combined$age
+
+#if age is an interval then we define it as mean
+for (i in 1:length(age)) {
+  if (grepl('-',age[i])) {
+    z = strsplit(age[i], '-')
+    age[i] = mean (as.numeric(c(z[[1]][1],z[[1]][2])))
+  }
+}
+
+age <- as.numeric(age)
+mu <- mean(age[!is.na(age)])
+library(tidyverse)
+age = replace_na(age,mu)
+
+#age = as.numeric(age)
+for (i in 1:length(age)) {
+  if (is.na(age[i]) || age[i] == '') {
+    age.missing[i] =1
+  }
+}
+
+all.age <- as.data.frame(cbind(age))
+```
+
+# dealing with sex
+# we convert all features to indictor vriables
+# TODO: <4 create a dummy variable call others
+```{r}
+#we only select the feature that appears >4 times in training set
+sex = combined$sex
+sex_union = union(train$sex,test$sex)
+sex_union = c(sex_union,'others')
+##create a data frame containing all union sex
+sex_matrix = as.data.frame(matrix(ncol = length(sex_union), nrow = length(sex)))
+
+##crreate a array of each feature in sex
+feature = c()
+for (each_sex in sex_union) {feature = append(feature,paste0('sex.',each_sex))}
+
+colnames(sex_matrix) = feature
+
+for (i in 1:length(sex)) {
+  for (j in 1:length(feature)) {
+    if (grepl(sex[i],feature[j])) {
+      sex_matrix[i,j] = 1
+    }
+    else {sex_matrix[i,j] = 0}
+  }
+}
+low_index = apply(sex_matrix, 2, sum) < 8
+for (i in 1:length(sex)) {
+  if (sum(sex_matrix[i,low_index])>0){
+    sex_matrix[i,'sex.others'] = 1
+  }
+}
+new_low_index = apply(sex_matrix, 2, sum) < 8
+sex_matrix[,new_low_index] = NULL
+new.combined <- cbind(all.age, sex_matrix)
+```
+
+# dealing with city 
+# we convert all features to indictor vriables
+```{r,eval=False}
+city = combined$city
+city_union = union(train$city,test$city)
+city_union = c(city_union,'others')
+##create a data frame containing all intersect city
+city_matrix = as.data.frame(matrix(ncol = length(city_union), nrow = length(city)))
+
+##crreate a array of each feature in city
+feature = c()
+for (each_city in city_union) {feature = append(feature,paste0('city.',each_city))}
+
+colnames(city_matrix) = feature
+
+for (i in 1:length(city)) {
+  for (j in 1:length(feature)) {
+    if (grepl(city[i],feature[j])) {
+      city_matrix[i,j] = 1
+    }
+    else {city_matrix[i,j] = 0}
+  }
+}
+
+low_index = apply(city_matrix, 2, sum) < 8
+for (i in 1:length(city)) {
+  if (sum(city_matrix[i,low_index])>0){
+    city_matrix[i,'city.others'] = 1
+  }
+}
+new_low_index = apply(city_matrix, 2, sum) < 8
+city_matrix[,new_low_index] = NULL
+
+new.combined <- cbind(new.combined,city_matrix)
+```
+
+
+## dealing with province
+# TODO: <4 create a dummy variable call others
+```{r}
+#we only select the feature that appears >4 times in training set
+province = combined$province
+province_union = union(train$province,test$province)
+province_union = c(province_union,'others')
+##create a data frame containing all union province
+province_matrix = as.data.frame(matrix(ncol = length(province_union), nrow = length(province)))
+
+##crreate a array of each feature in province
+feature = c()
+for (each_province in province_union) {feature = append(feature,paste0('province.',each_province))}
+
+colnames(province_matrix) = feature
+
+for (i in 1:length(province)) {
+  for (j in 1:length(feature)) {
+    if (grepl(province[i],feature[j])) {
+      province_matrix[i,j] = 1
+    }
+    else {province_matrix[i,j] = 0}
+  }
+}
+low_index = apply(province_matrix, 2, sum) < 8
+for (i in 1:length(province)) {
+  if (sum(province_matrix[i,low_index])>0){
+    province_matrix[i,'province.others'] = 1
+  }
+}
+new_low_index = apply(province_matrix, 2, sum) < 8
+province_matrix[,new_low_index] = NULL
+
+new.combined <- cbind(new.combined,province_matrix)
+```
+
+## dealing with country
+# TODO: <4 create a dummy variable call others
+```{r}
+#we only select the feature that appears >4 times in training set
+country = combined$country
+country_union = union(train$country,test$country)
+country_union = c(country_union,'others')
+##create a data frame containing all union country 
+country_matrix = as.data.frame(matrix(ncol = length(country_union), nrow = length(country)))
+
+##crreate a array of each feature in country
+feature = c()
+for (each_country in country_union) {feature = append(feature,paste0('country.',each_country))}
+
+colnames(country_matrix) = feature
+
+for (i in 1:length(country)) {
+  for (j in 1:length(feature)) {
+    if (grepl(country[i],feature[j])) {
+      country_matrix[i,j] = 1
+    }
+    else {country_matrix[i,j] = 0}
+  }
+}
+low_index = apply(country_matrix, 2, sum) < 8
+for (i in 1:length(country)) {
+  if (sum(country_matrix[i,low_index])>0){
+    country_matrix[i,'country.others'] = 1
+  }
+}
+new_low_index = apply(country_matrix, 2, sum) < 8
+country_matrix[,new_low_index] = NULL
+
+new.combined <- cbind(new.combined,country_matrix)
+```
+
+## dealing with V1
+# TODO: <4 create a dummy variable call others
+```{r}
+#we only select the feature that appears >4 times in training set
+V1 = combined$V1
+V1_union = union(train$V1,test$V1)
+V1_union = c(V1_union,'others')
+##create a data frame containing all union V1 
+V1_matrix = as.data.frame(matrix(ncol = length(V1_union), nrow = length(V1)))
+
+##crreate a array of each feature in V1
+feature = c()
+for (each_V1 in V1_union) {feature = append(feature,paste0('V1.',each_V1))}
+
+colnames(V1_matrix) = feature
+
+for (i in 1:length(V1)) {
+  for (j in 1:length(feature)) {
+    if (grepl(V1[i],feature[j])) {
+      V1_matrix[i,j] = 1
+    }
+    else {V1_matrix[i,j] = 0}
+  }
+}
+low_index = apply(V1_matrix, 2, sum) < 8
+for (i in 1:length(V1)) {
+  if (sum(V1_matrix[i,low_index])>0){
+    V1_matrix[i,'V1.others'] = 1
+  }
+}
+new_low_index = apply(V1_matrix, 2, sum) < 8
+V1_matrix[,new_low_index] = NULL
+
+new.combined <- cbind(new.combined,V1_matrix)
+```
+
+## dealing with confirmed
+## we convert confirmed date to numeric value
+```{r}
+confirmed = combined$confirmed
+for (i in 1:length(confirmed)){
+  confirmed[i]=as.POSIXct(confirmed[i], format="%d.%m.%y")
+}
+confirmed = as.numeric(confirmed)
+mu <- mean(confirmed[!is.na(confirmed)])
+library(tidyverse)
+confirmed = replace_na(confirmed,mu)
+new.combined <- cbind(new.combined,confirmed)
+```
+
+## dealing with sympotoms(two features)
+```{r}
+##1. pre-processiong with text data
+#TODO: (optional) add feature no_symptoms
+# train symptoms
+train_symptoms=as.data.frame(combined$symptoms)
+#split string by ';'
+library('tidyverse')
+train_symptoms=as.data.frame(separate_rows(train_symptoms, 1, sep = ";", convert = FALSE))
+colnames(train_symptoms) = c('train_symptoms')
+
+
+for (i in 1:nrow(train_symptoms)){
+  ## TODO: another way to extract feature by particular temp
+  if (grepl('fever',train_symptoms[i,1])) {train_symptoms[i,1] = 'fever'}
+
+  #remove leading space and trail space
+  train_symptoms[i,1] = gsub("^\\s+|\\s+$", "", train_symptoms[i,1])
+}
+
+# test symptoms
+test_symptoms=as.data.frame(test$symptoms)
+#split string by ';'
+test_symptoms=as.data.frame(separate_rows(test_symptoms, 1, sep = ";", convert = FALSE))
+colnames(test_symptoms) = c('test_symptoms')
+for (i in 1:nrow(test_symptoms)){
+  ## TODO: another way to extract feature by particular temp
+  if (grepl('fever',test_symptoms[i,1])) {test_symptoms[i,1] = 'fever'}
+
+  #remove leading space and trail space
+  test_symptoms[i,1] = gsub("^\\s+|\\s+$", "", test_symptoms[i,1])
+}
+
+
+```
+
+```{r}
+##extract feature from train data
+#Find interection of symptoms in train and test
+symptoms_intersect=intersect(train_symptoms$train_symptoms,test_symptoms$test_symptoms)
+
+#here we want to remove missing value in intersect array
+symptoms_intersect = symptoms_intersect[-4]
+
+symptoms = combined$symptoms
+##create a data frame containing all intersect V1
+symptoms_matrix = as.data.frame(matrix(ncol = length(symptoms_intersect), nrow = length(symptoms)))
+
+##crreate a array of each feature in V1
+feature = c()
+for (each_symptoms in symptoms_intersect) {feature = append(feature,paste0('symptoms.',each_symptoms))}
+
+colnames(symptoms_matrix) = feature
+
+for (i in 1:length(symptoms)) {
+  for (j in 1:length(feature)) {
+    if (grepl(symptoms_intersect[j],symptoms[i])) {
+      symptoms_matrix[i,j] = 1
+    }
+    else {symptoms_matrix[i,j] = 0}
+  }
+}
+##keeps only fever and cough
+##add duration and symptoms.feature in new.train
+duration = combined$duration
+new.combined <- cbind(new.combined,symptoms_matrix[,c(4,5)],duration)
+```
+
+
+## dealing with sympotoms(lots of features)
+```{r}
+# ##1. pre-processiong with text data 
+# #TODO: (optional) add feature no_symptoms
+# # train symptoms
+# train_symptoms=as.data.frame(train$symptoms)
+# #split string by ';'
+# library('tidyverse')
+# train_symptoms=as.data.frame(separate_rows(train_symptoms, 1, sep = ";", convert = FALSE))
+# colnames(train_symptoms) = c('train_symptoms')
+# 
+# 
+# for (i in 1:nrow(train_symptoms)){
+#   ## TODO: another way to extract feature by particular temp
+#   if (grepl('fever',train_symptoms[i,1])) {train_symptoms[i,1] = 'fever'}
+#   
+#   #remove leading space and trail space
+#   train_symptoms[i,1] = gsub("^\\s+|\\s+$", "", train_symptoms[i,1])
+# }
+# 
+# # test symptoms
+# test_symptoms=as.data.frame(test$symptoms)
+# #split string by ';'
+# test_symptoms=as.data.frame(separate_rows(test_symptoms, 1, sep = ";", convert = FALSE))
+# colnames(test_symptoms) = c('test_symptoms')
+# for (i in 1:nrow(test_symptoms)){
+#   ## TODO: another way to extract feature by particular temp
+#   if (grepl('fever',test_symptoms[i,1])) {test_symptoms[i,1] = 'fever'}
+#   
+#   #remove leading space and trail space
+#   test_symptoms[i,1] = gsub("^\\s+|\\s+$", "", test_symptoms[i,1])
+# }
+# 
+# 
+# ```
+# 
+# ```{r}
+# ##extract feature from train data
+# #Find interection of symptoms in train and test
+# symptoms_intersect=intersect(train_symptoms$train_symptoms,test_symptoms$test_symptoms)
+# symptoms_intersect
+# 
+# #here we want to remove missing value in intersect array
+# symptoms_intersect = symptoms_intersect[-4]
+# symptoms_intersect
+# 
+# symptoms = combined$symptoms
+# ##create a data frame containing all intersect V1 
+# symptoms_matrix = as.data.frame(matrix(ncol = length(symptoms_intersect), nrow = length(symptoms)))
+# 
+# ##crreate a array of each feature in V1
+# feature = c()
+# for (each_symptoms in symptoms_intersect) {feature = append(feature,paste0('symptoms.',each_symptoms))}
+# 
+# colnames(symptoms_matrix) = feature
+# 
+# for (i in 1:length(symptoms)) {
+#   for (j in 1:length(feature)) {
+#     if (grepl(symptoms_intersect[j],symptoms[i])) {
+#       symptoms_matrix[i,j] = 1
+#     }
+#     else {symptoms_matrix[i,j] = 0}
+#   }
+# }
+# ##add duration and symptoms.feature in new.train
+# duration = combined$duration
+# new.combined <- cbind(new.combined,symptoms_matrix,duration)
+```
+
+
+# Export test data
+```{r}
+train_ind = 1:nrow(train)
+new.test = new.combined[-train_ind,] %>% select(-duration)
+write.table(new.test, file = 'cleaned_test.txt', sep= ',')
+```
+
+# Export train data
+```{r}
+new.train = new.combined[train_ind,]
+pre_model = lm(duration~age+confirmed,data = new.train)
+
+age = new.train$age + 1
+confirmed = new.train$confirmed+ 3600
+new_data =as.data.frame(cbind(confirmed,age))
+pred = predict(pre_model, new_data)
+
+
+train_combined = new.train
+train_combined$age = new_data$age
+train_combined$confirmed = new_data$confirmed
+train_combined$duration = pred
+
+train_combined = rbind(new.train,train_combined)
+
+write.table(train_combined, file = 'cleaned_train.txt', sep= ',')
+```
+
+
