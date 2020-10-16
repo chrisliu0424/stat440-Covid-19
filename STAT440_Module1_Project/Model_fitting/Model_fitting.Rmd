@@ -98,7 +98,7 @@ kaggle$duration = lasso.min.pred
 write.csv(kaggle,'kaggle.csv',row.names = F)
 ```
 
-# Random Forest
+# Random Forest(best model with score 4.28)
 ```{r}
 rf = randomForest(duration ~ ., data = train, mtry=10, ntree=300)
 rf.pred = predict(rf,newdata = test)
