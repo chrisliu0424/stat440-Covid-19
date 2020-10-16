@@ -14,6 +14,9 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls())
 train <- read.table('train2.txt',sep = ',',header = TRUE)
 test <- read.table('test2.txt',sep = ',',header = TRUE)
+plot(factor(train$country),train$duration,xlab = 'Country', ylab = 'Duration',main = '',las=2)
+table(train$country)
+plot(factor(train$sex),train$duration,xlab = 'Sex', ylab = 'Duration',main = '')
 ```
 
 ##Combine the two data frame
