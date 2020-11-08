@@ -1,4 +1,3 @@
-Stat 440 Module 1
+Stat 440 Covid-19 Project by team Output Error done on September 2020
 
-Covid-19 Project by team Output Error
 Final version is in the folder: STAT440_Module1_Project
